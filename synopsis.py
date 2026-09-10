@@ -39,7 +39,6 @@ def _():
     # url = "titanic.parquet"
     df = pl.read_parquet(url).select(pl.all().name.to_lowercase())
 
-
     return df, pl
 
 
@@ -56,6 +55,14 @@ def _(df, mo):
         FROM df
         """
     )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## Überlebende nach Merkmalen
+    """)
     return
 
 
@@ -141,7 +148,6 @@ def _(df, pl):
 
     # Letzter Ausdruck der Zelle:
     ax
-
     return (
         StratifiedKFold,
         X,
@@ -152,6 +158,41 @@ def _(df, pl):
         y,
         y_test,
     )
+
+
+@app.cell
+def _(mo):
+    import numpy as np
+
+    pclass_input = mo.ui.dropdown(options={"1. Klasse": 1, "2. Klasse": 2, "3. Klasse": 3}, value="3. Klasse", label="Reiseklasse")
+    sex_input = mo.ui.radio(options={"Weiblich": 1, "Männlich": 0}, value="Männlich", label="Geschlecht")
+    age_input = mo.ui.slider(start=1, stop=80, step=1, value=25, label="Alter")
+
+    mo.hstack([pclass_input, sex_input, age_input])
+    return age_input, np, pclass_input, sex_input
+
+
+@app.cell
+def _(age_input, clf, mo, np, pclass_input, sex_input):
+
+    # Wichtig: Falls clf mit 6 Merkmalen trainiert wurde, 
+    # müssen hier auch 6 Werte übergeben werden:
+    sample = np.array([[
+        pclass_input.value,
+        sex_input.value,
+        age_input.value,
+        0,     # sibsp
+        0,     # parch
+        32.0,  # fare
+    ]])
+
+    pred = clf.predict(sample)[0]
+    prob = clf.predict_proba(sample)[0][1]
+
+    status = "Überlebt" if pred == 1 else "Verstorben"
+
+    mo.md(f"**Prognose:** {status} *(Überlebenswahrscheinlichkeit: {prob * 100:.1f}%)*")
+    return
 
 
 @app.cell(hide_code=True)
@@ -200,6 +241,22 @@ def _(
     {report}
     ```
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Simulation
+
+    Mit Hilfe des Entscheidungsbaums kann man nun die Überlebenschance auf den Pfaden des Baums simulieren.
+    """)
+    return
+
+
+@app.cell
+def _(clf):
+    clf
     return
 
 
