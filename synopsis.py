@@ -77,8 +77,35 @@ def _(df, mo):
             age AS Alter,
             name as Name
         FROM df
-        """
+        """,
+        output=False
     )
+    return
+
+
+@app.cell
+def _(df, mo, pl):
+    display_df = df.select([
+        pl.when(pl.col("survived") == 1)
+          .then(pl.lit("Ja"))
+          .when(pl.col("survived") == 0)
+          .then(pl.lit("Nein"))
+          .otherwise(None)
+          .alias("Überlebt"),
+
+        pl.when(pl.col("sex").cast(pl.String).is_in(["male", "0"]))
+          .then(pl.lit("Männlich"))
+          .when(pl.col("sex").cast(pl.String).is_in(["female", "1"]))
+          .then(pl.lit("Weiblich"))
+          .otherwise(None)
+          .alias("Geschlecht"),
+
+        pl.col("pclass").alias("Klasse"),
+        pl.col("age").alias("Alter"),
+        pl.col("name").alias("Name"),
+    ])
+
+    mo.ui.table(display_df, page_size=10)
     return
 
 
@@ -108,8 +135,37 @@ def _(df, mo):
          FROM df
          GROUP BY pclass
          ORDER BY pclass ASC;
-        """
+        """,
+        output=False
     )
+    return
+
+
+@app.cell
+def _(df, mo, pl):
+    summary_df = (
+        df.group_by("pclass")
+        .agg([
+            pl.len().alias("Passagiere"),
+            pl.col("survived").sum().alias("Überlebende"),
+            (pl.col("survived").mean() * 100).round(1).alias("Quote ges."),
+            (
+                pl.col("survived")
+                .filter(pl.col("sex") == "female")
+                .mean() * 100
+            ).round(1).alias("Quote Frauen"),
+            (
+                pl.col("survived")
+                .filter(pl.col("sex") == "male")
+                .mean() * 100
+            ).round(1).alias("Quote Männer"),
+        ])
+        .rename({"pclass": "Klasse"})
+        .sort("Klasse")
+    )
+
+    # Interaktives Marimo-Tabellen-Widget anzeigen:
+    mo.ui.table(summary_df)
     return
 
 
