@@ -7,7 +7,30 @@ app = marimo.App(width="medium")
 @app.cell
 def _():
     import marimo as mo
+    import altair
 
+    """ CSS Styling """
+    mo.Html(
+        """
+        <style>
+          /* Globaler Text & Markdown-Absätze */
+          .prose, .markdown, body {
+              font-size: 18px;
+              line-height: 1.6;
+          }
+
+          /* Titel / Überschriften proportional anpassen */
+          .prose h1 { font-size: 2.2rem; }
+          .prose h2 { font-size: 1.7rem; }
+          .prose h3 { font-size: 1.35rem; }
+
+          /* Marimo UI-Widgets (Labels, Dropdowns, Slider) */
+          .marimo-ui, label {
+              font-size: 16px;
+          }
+        </style>
+        """
+    )
     return (mo,)
 
 
@@ -19,6 +42,8 @@ def _(mo):
     **Abstract**
 
     Die Überlebenschancen beim Untergang der Titanic waren keineswegs zufällig verteilt. Diese Analyse modelliert die Passagierdaten anhand von Geschlecht, Reiseklasse und Altersgruppe, um mithilfe eines Entscheidungsbaums die entscheidenden Faktoren und Kohorten offenzulegen.
+
+    ![](https://www.kroesch.ch/posts/der_untergang/Titanic_wreck_bow.jpg)
     """)
     return
 
@@ -61,14 +86,37 @@ def _(df, mo):
 def _(mo):
     mo.md(r"""
     ## Überlebende nach Merkmalen
+
+    Die Titanic hatte mehrere Reiseklassen, wobe sich die erste Klasse auf den oberen Decks befand. Die Passagiere wurden dort früher geweckt und hatten besseren Zugang zzu den Rettungsbooten. Die zweite und dritte Klasse befand sich auf den tieferen Decks im Schiffsrumpf und Fluchtwege waren ausserdem durch Absperrgitter versperrt. Ausserdem gilt in der Seefahrt "Frauen und Kinder zuerst"; dieser Grundsatz soll die Restlebenszeit maximieren.
+
+    Wir vermuten also, dass generell mehr Frauen und Passagiere der ersten und zweiten Klasse das Unglück überlebt haben.
     """)
+    return
+
+
+@app.cell
+def _(df, mo):
+    _df = mo.sql(
+        f"""
+        SELECT 
+             pclass AS Klasse,
+             COUNT(*) AS Passagiere,
+             SUM(survived) AS Überlebende,
+             ROUND(AVG(survived) * 100, 1) AS "Quote ges.",
+             ROUND(AVG(survived) FILTER (WHERE sex = 'female') * 100, 1) AS "Quote Frauen",
+             ROUND(AVG(survived) FILTER (WHERE sex = 'male') * 100, 1) AS "Quote Männer"
+         FROM df
+         GROUP BY pclass
+         ORDER BY pclass ASC;
+        """
+    )
     return
 
 
 @app.cell
 def _(mo):
     mo.md(r"""
-    ## Modellierung als Entscheidungsbaum
+    ## Regelbasierte Klassifikation der Überlebenswahrscheinlichkeit
 
     Ein Entscheidungsbaum funktioniert wie ein logisches Flussdiagramm: Er stellt nacheinander einfache Ja/Nein-Fragen (etwa „Ist die Person weiblich?“ oder „Reist sie in der 3. Klasse?“), um Passagiere Schritt für Schritt in immer eindeutigere Gruppen zu sortieren. Am Ende jedes Pfads steht eine feste Kohorte samt historischer Überlebenswahrscheinlichkeit.
 
@@ -159,20 +207,13 @@ def _(df, pl):
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
     mo.md(r"""
     ### Simulation
 
-    Mit Hilfe des Entscheidungsbaums kann man nun die Überlebenschance auf den Pfaden des Baums simulieren.
+    Anhand der gelernten Trennkriterien des Baums lassen sich individuelle Profile testen: Wähle Klasse, Geschlecht und Alter, um zu sehen, welchem Entscheidungspfad das Modell folgt und wie hoch die geschätzte Überlebenschance ausfällt.
     """)
-    return
-
-
-@app.cell
-def _(clf):
-    print("Features erwartet:", getattr(clf, "feature_names_in_", "Keine Namen gespeichert"))
-    print("Klassen-Reihenfolge:", clf.classes_)
     return
 
 
@@ -263,7 +304,7 @@ def _(mo):
     ### Quellen
     - [Projektseite](https://github.com/kernlogik/titanic_passengers)
     - Rohdaten: https://s3.kroesch.net/example_datasets/titanic.parquet
-    - [Scikit-Lear: Decision Trees](https://scikit-learn.org/stable/modules/tree.html)
+    - [Scikit-Learn: Decision Trees](https://scikit-learn.org/stable/modules/tree.html)
     - [Der Untergang](https://www.kroesch.ch/posts/der_untergang/): Blogpost zu den Ursachen der Katastrophe und den nautischen Konsequenzen.
     """)
     return
