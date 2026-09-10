@@ -35,7 +35,8 @@ def _(mo):
 def _():
     """ Einlesen Dataframe """
     import polars as pl
-    url = "titanic.parquet"
+    url = "https://raw.githubusercontent.com/kernlogik/titanic_passengers/main/titanic.parquet"
+    # url = "titanic.parquet"
     df = pl.read_parquet(url).select(pl.all().name.to_lowercase())
 
 
