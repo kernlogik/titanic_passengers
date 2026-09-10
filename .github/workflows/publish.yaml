@@ -39,6 +39,7 @@ jobs:
       - name: Export notebook to WASM HTML
         run: |
           mkdir -p dist
+          cp titanic.parquet dist/
           marimo export html-wasm synopsis.py --output dist/index.html --mode run
 
       - name: Upload GitHub Pages artifact
