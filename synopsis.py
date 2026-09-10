@@ -11,7 +11,7 @@ def _():
     return (mo,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
     mo.md(r"""
     # Der Untergang der Titanic
@@ -38,7 +38,6 @@ def _():
     url = "https://kernlogik.github.io/titanic_passengers/titanic.parquet"
     # url = "titanic.parquet"
     df = pl.read_parquet(url).select(pl.all().name.to_lowercase())
-
     return df, pl
 
 
