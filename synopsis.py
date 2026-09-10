@@ -91,7 +91,8 @@ def _(df, pl):
         .drop_nulls(subset=["survived", "sex", "pclass"])
         .with_columns(
             # guess missing age with median
-            pl.col("age").fill_null(pl.col("age").median())
+            pl.col("age").fill_null(pl.col("age").median()),
+            pl.col("sex").replace({"female": 1, "male": 0}).cast(pl.Int8)
         )
         .with_columns(
             pl.when(pl.col("age") <= 14).then(pl.lit("Kind"))
@@ -99,7 +100,6 @@ def _(df, pl):
             .when(pl.col("age") <= 60).then(pl.lit("Erwachsener"))
             .otherwise(pl.lit("Senior"))
             .alias("age_group"),
-            pl.col("pclass").cast(pl.String)
         )
     )
 
@@ -111,10 +111,10 @@ def _(df, pl):
 
     """ Feature-Matrix und Target trennen"""
     target_col = "survived"
-    feature_cols = [c for c in df_encoded.columns if c not in (target_col, "age")]
+    feature_cols = ["pclass", "sex", "age"]
 
-    X = df_encoded.select(feature_cols).to_numpy()
-    y = df_encoded[target_col].to_numpy()
+    X = df_clean.select(feature_cols).to_numpy()
+    y = df_clean.select("survived").to_numpy().ravel()
 
     """ Stratifizierter Split """
     X_train, X_test, y_train, y_test = train_test_split(
@@ -159,6 +159,23 @@ def _(df, pl):
     )
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Simulation
+
+    Mit Hilfe des Entscheidungsbaums kann man nun die Überlebenschance auf den Pfaden des Baums simulieren.
+    """)
+    return
+
+
+@app.cell
+def _(clf):
+    print("Features erwartet:", getattr(clf, "feature_names_in_", "Keine Namen gespeichert"))
+    print("Klassen-Reihenfolge:", clf.classes_)
+    return
+
+
 @app.cell
 def _(mo):
     import numpy as np
@@ -177,20 +194,17 @@ def _(age_input, clf, mo, np, pclass_input, sex_input):
     # Wichtig: Falls clf mit 6 Merkmalen trainiert wurde, 
     # müssen hier auch 6 Werte übergeben werden:
     sample = np.array([[
-        pclass_input.value,
-        sex_input.value,
-        age_input.value,
-        0,     # sibsp
-        0,     # parch
-        32.0,  # fare
+        pclass_input.value, 
+        sex_input.value, 
+        age_input.value
     ]])
 
     pred = clf.predict(sample)[0]
     prob = clf.predict_proba(sample)[0][1]
 
     status = "Überlebt" if pred == 1 else "Verstorben"
-
     mo.md(f"**Prognose:** {status} *(Überlebenswahrscheinlichkeit: {prob * 100:.1f}%)*")
+
     return
 
 
@@ -240,22 +254,6 @@ def _(
     {report}
     ```
     """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Simulation
-
-    Mit Hilfe des Entscheidungsbaums kann man nun die Überlebenschance auf den Pfaden des Baums simulieren.
-    """)
-    return
-
-
-@app.cell
-def _(clf):
-    clf
     return
 
 
