@@ -100,3 +100,8 @@ plt.tight_layout()
 plt.show()
 plt.savefig("tree.png")
 
+pl.Config.set_tbl_cols(20)
+pl.Config.set_tbl_width_chars(200)
+pl.Config.set_tbl_rows(50)
+#Was verbindet die Passagiere mit den folgenden Ticket-Nummern (a) 19928, (b) 19950, (c) PC 17755, (d) 110152?
+print(df.filter((pl.col("ticket") == "19928") | (pl.col("ticket") == "19950") | (pl.col("ticket") == "PC 17755") | (pl.col("ticket") == "110152")).sort("ticket"))
