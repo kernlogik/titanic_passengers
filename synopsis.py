@@ -13,20 +13,37 @@ def _():
     mo.Html(
         """
         <style>
-          /* Globaler Text & Markdown-Absätze */
-          .prose, .markdown, body {
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+          /* Fließtext: STIX Two Text */
+          body, .prose, .markdown, p, li {
+              font-family: 'STIX Two Text', Georgia, serif;
               font-size: 18px;
-              line-height: 1.6;
+              line-height: 1.65;
+              letter-spacing: 0.01em;
           }
 
-          /* Titel / Überschriften proportional anpassen */
-          .prose h1 { font-size: 2.2rem; }
-          .prose h2 { font-size: 1.7rem; }
-          .prose h3 { font-size: 1.35rem; }
+          /* Überschriften: Entweder STIX Two (fett) oder Inter */
+          .prose h1, .prose h2, .prose h3, h1, h2, h3 {
+              /* Variante A (Modern Science): Sans-Überschrift */
+              font-family: 'Inter', system-ui, sans-serif;
+              font-weight: 600;
+              letter-spacing: -0.02em;
 
-          /* Marimo UI-Widgets (Labels, Dropdowns, Slider) */
-          .marimo-ui, label {
-              font-size: 16px;
+              /* Variante B (Voll-Serif): Wenn gewünscht, Zeile oben auskommentieren und hier aktivieren: */
+              /* font-family: 'STIX Two Text', Georgia, serif; font-weight: 700; */
+          }
+
+          /* UI-Widgets & Steuerelemente */
+          .marimo-ui, label, button, input, select {
+              font-family: 'Inter', system-ui, sans-serif !important;
+              font-size: 15px;
+          }
+
+          /* Codeblöcke & Zahlen */
+          code, pre, .font-mono {
+              font-family: 'JetBrains Mono', monospace !important;
+              font-size: 0.9em;
           }
         </style>
         """
@@ -41,7 +58,7 @@ def _(mo):
 
     **Abstract**
 
-    Die Überlebenschancen beim Untergang der Titanic waren keineswegs zufällig verteilt. Diese Analyse modelliert die Passagierdaten anhand von Geschlecht, Reiseklasse und Altersgruppe, um mithilfe eines Entscheidungsbaums die entscheidenden Faktoren und Kohorten offenzulegen.
+    Die Überlebenschancen beim Untergang der Titanic waren nicht zufällig verteilt. Diese Analyse modelliert die Passagierdaten anhand von Geschlecht, Reiseklasse und Altersgruppe, um mithilfe eines Entscheidungsbaums die entscheidenden Faktoren und Kohorten offenzulegen.
 
     ![](https://www.kroesch.ch/posts/der_untergang/Titanic_wreck_bow.jpg)
     """)
