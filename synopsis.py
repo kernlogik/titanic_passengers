@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "marimo",
+#     "polars",
+#     "matplotlib",
+#     "scikit-learn",
+# ]
+# ///
+
 import marimo
 
 __generated_with = "0.24.0"
@@ -56,9 +66,7 @@ def _(mo):
     mo.md(r"""
     # Der Untergang der Titanic
 
-    **Abstract**
-
-    Die Überlebenschancen beim Untergang der Titanic waren nicht zufällig verteilt. Diese Analyse modelliert die Passagierdaten anhand von Geschlecht, Reiseklasse und Altersgruppe, um mithilfe eines Entscheidungsbaums die entscheidenden Faktoren und Kohorten offenzulegen.
+    **Abstract** Die Überlebenschancen beim Untergang der Titanic waren nicht zufällig verteilt. Diese Analyse modelliert die Passagierdaten anhand von Geschlecht, Reiseklasse und Altersgruppe, um mithilfe eines Entscheidungsbaums die entscheidenden Faktoren und Kohorten offenzulegen.
 
     ![](https://www.kroesch.ch/posts/der_untergang/Titanic_wreck_bow.jpg)
     """)
@@ -159,45 +167,13 @@ def _(df, mo):
 
 
 @app.cell
-def _(df, mo, pl):
-    summary_df = (
-        df.group_by("pclass")
-        .agg([
-            pl.len().alias("Passagiere"),
-            pl.col("survived").sum().alias("Überlebende"),
-            (pl.col("survived").mean() * 100).round(1).alias("Quote ges."),
-            (
-                pl.col("survived")
-                .filter(pl.col("sex") == "female")
-                .mean() * 100
-            ).round(1).alias("Quote Frauen"),
-            (
-                pl.col("survived")
-                .filter(pl.col("sex") == "male")
-                .mean() * 100
-            ).round(1).alias("Quote Männer"),
-        ])
-        .rename({"pclass": "Klasse"})
-        .sort("Klasse")
-    )
-
-    # Interaktives Marimo-Tabellen-Widget anzeigen:
-    mo.ui.table(summary_df)
-    return
-
-
-@app.cell
-def _(df, pl, plt):
-    import seaborn as sns
-
-    sns.set_theme()
+def _(df, np, pl, plt):
 
     category_names = ["Kinder", "Jugendliche", "Erwachsene", "Senioren"]
 
-    """ Null-Werte ausschliessen, Altersgruppen und deutsches Geschlecht anlegen """
-    df_binned = (
-        df
-        .drop_nulls(subset=["age"])
+    """ Daten aggregieren und pivotieren """
+    pivot_df = (
+        df.drop_nulls(subset=["age"])
         .with_columns([
             pl.col("age")
             .cut(breaks=[15, 25, 65], labels=category_names)
@@ -205,18 +181,14 @@ def _(df, pl, plt):
             pl.col("sex")
             .cast(pl.String)
             .replace({
-                "male": "Männlich", "0": "Männlich",
-                "female": "Weiblich", "1": "Weiblich"
+                "male": "Männlich",
+                "0": "Männlich",
+                "female": "Weiblich",
+                "1": "Weiblich",
             })
             .alias("Geschlecht"),
-            # survived in Float wandeln für saubere Mittelwertbildung
-            pl.col("survived").cast(pl.Float64)
+            pl.col("survived").cast(pl.Float64),
         ])
-    )
-
-    """ Pivotieren: mean * 100 liefert die Überlebensquote in Prozent """
-    pivot_df = (
-        df_binned
         .pivot(
             on="Geschlecht",
             index="age_group",
@@ -225,80 +197,113 @@ def _(df, pl, plt):
         )
         .with_columns([
             (pl.col("Männlich") * 100).round(1),
-            (pl.col("Weiblich") * 100).round(1)
+            (pl.col("Weiblich") * 100).round(1),
         ])
         .sort("age_group")
     )
 
-    """ Achsen und Matrix vorbereiten """
+    """ Achsenbeschriftungen und Matrix für imshow extrahieren """
     x_labels = ["Männlich", "Weiblich"]
     y_labels = pivot_df["age_group"].to_list()
-    heatmap_matrix = pivot_df.select(x_labels).to_numpy()
+    matrix = pivot_df.select(x_labels).to_numpy()
 
-    """ Heatmap mit Prozentwerten und korrekter Farbskala ausgeben """
-    h_fig, h_ax = plt.subplots(figsize=(6, 4))
-    sns.heatmap(
-        heatmap_matrix,
-        annot=True,
-        fmt=".1f",
-        cmap="RdYlGn",  # Rot = geringe Chance, Grün = hohe Chance
-        vmin=0,
-        vmax=100,
-        xticklabels=x_labels,
-        yticklabels=y_labels,
-        cbar_kws={"label": "Überlebensquote in %"},
-        ax=h_ax,
+    """ Plot anlegen und Seaborn-Grid für die Heatmap abschalten """
+    h_fig, h_ax = plt.subplots(figsize=(6, 4.5))
+    h_ax.grid(False)
+
+    """ Colormap kopieren und NaN-Felder neutral einfärben """
+    cmap = plt.cm.RdYlGn.copy()
+    cmap.set_bad(color="#e5e5e5")
+
+    """ aspect='auto' lässt die Zellen die volle Breite ausfüllen """
+    im = h_ax.imshow(
+        matrix, cmap=cmap, vmin=0, vmax=100, origin="lower", aspect="auto"
     )
-    h_ax.invert_yaxis()
+
+    h_ax.set_xticks(range(len(x_labels)))
+    h_ax.set_yticks(range(len(y_labels)))
+    h_ax.set_xticklabels(x_labels, fontsize=11)
+    h_ax.set_yticklabels(y_labels, fontsize=11)
+
+    """ Werte eintragen und NaN sauber als Gedankenstrich formatieren """
+    for i in range(len(y_labels)):
+        for j in range(len(x_labels)):
+            val = matrix[i, j]
+            if np.isnan(val):
+                h_ax.text(
+                    j,
+                    i,
+                    "–",
+                    ha="center",
+                    va="center",
+                    color="#777777",
+                    weight="bold",
+                    fontsize=12,
+                )
+            else:
+                text_color = "white" if val < 25 or val > 75 else "black"
+                h_ax.text(
+                    j,
+                    i,
+                    f"{val:.1f}%",
+                    ha="center",
+                    va="center",
+                    color=text_color,
+                    weight="bold",
+                    fontsize=11,
+                )
+
+    h_fig.colorbar(im, ax=h_ax, label="Überlebensquote in %", pad=0.04)
+    h_fig.tight_layout()
 
     h_ax
-    return (sns,)
+    return
 
 
 @app.cell
-def _(df, pl, plt, sns):
+def _(df, np, pl, plt):
 
-    sns.set_theme(style="whitegrid")
 
-    """ Daten aggregieren und Überlebensrate in Prozent berechnen """
-    bar_df = (
+    """ Quoten nach Klasse und Geschlecht ermitteln """
+    rates = (
         df.with_columns([
-            pl.col("pclass").cast(pl.String).replace({
-                "1": "1. Klasse",
-                "2": "2. Klasse",
-                "3": "3. Klasse"
-            }).alias("Klasse"),
-            pl.col("sex").cast(pl.String).replace({
-                "male": "Männer", "0": "Männer",
-                "female": "Frauen", "1": "Frauen"
-            }).alias("Geschlecht"),
+            pl.col("pclass").cast(pl.String),
+            pl.col("sex").cast(pl.String).replace({"male": "0", "female": "1"}),
             pl.col("survived").cast(pl.Float64)
         ])
-        .group_by(["Klasse", "Geschlecht"])
-        .agg((pl.col("survived").mean() * 100).round(1).alias("Überlebensrate"))
-        .sort(["Klasse", "Geschlecht"])
+        .group_by(["pclass", "sex"])
+        .agg((pl.col("survived").mean() * 100).round(1).alias("rate"))
     )
 
-    """ Plot initialisieren und zeichnen (WASM-sicher ohne Arrow-Konvertierung) """
+    # Raten als Arrays für die Klassen 1, 2, 3 extrahieren
+    classes = ["1", "2", "3"]
+    frauen = [
+        rates.filter((pl.col("pclass") == c) & (pl.col("sex") == "1"))["rate"].to_list()[0]
+        for c in classes
+    ]
+    maenner = [
+        rates.filter((pl.col("pclass") == c) & (pl.col("sex") == "0"))["rate"].to_list()[0]
+        for c in classes
+    ]
+
+    """ Plot initialisieren """
     b_fig, b_ax = plt.subplots(figsize=(7, 4.5))
+    x = np.arange(len(classes))
+    width = 0.35
 
-    sns.barplot(
-        data=bar_df.to_dict(as_series=False),
-        x="Klasse",
-        y="Überlebensrate",
-        hue="Geschlecht",
-        palette={"Frauen": "#2ca02c", "Männer": "#1f77b4"},
-        ax=b_ax
-    )
+    rects_f = b_ax.bar(x - width/2, frauen, width, label="Frauen", color="#2ca02c")
+    rects_m = b_ax.bar(x + width/2, maenner, width, label="Männer", color="#1f77b4")
 
-    """ Beschriftungen, Skala und Werte-Labels setzen """
     b_ax.set_title("Überlebensrate nach Klasse und Geschlecht", fontsize=13, weight="bold")
     b_ax.set_ylabel("Überlebensquote in %")
     b_ax.set_xlabel("Reiseklasse")
+    b_ax.set_xticks(x)
+    b_ax.set_xticklabels(["1. Klasse", "2. Klasse", "3. Klasse"])
     b_ax.set_ylim(0, 105)
+    b_ax.grid(axis="y", linestyle="--", alpha=0.5)
 
-    for container in b_ax.containers:
-        b_ax.bar_label(container, fmt="%.1f%%", padding=3, fontsize=9)
+    b_ax.bar_label(rects_f, fmt="%.1f%%", padding=3, fontsize=9)
+    b_ax.bar_label(rects_m, fmt="%.1f%%", padding=3, fontsize=9)
 
     b_ax.legend(title="Geschlecht", loc="upper right")
     b_fig.tight_layout()
@@ -440,7 +445,6 @@ def _(age_input, clf, mo, np, pclass_input, sex_input):
 
     status = "Überlebt" if pred == 1 else "Verstorben"
     mo.md(f"**Prognose:** {status} *(Überlebenswahrscheinlichkeit: {prob * 100:.1f}%)*")
-
     return
 
 
