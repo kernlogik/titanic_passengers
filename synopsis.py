@@ -67,8 +67,6 @@ def _(mo):
     # Der Untergang der Titanic
 
     **Abstract** Die Überlebenschancen beim Untergang der Titanic waren nicht zufällig verteilt. Diese Analyse modelliert die Passagierdaten anhand von Geschlecht, Reiseklasse und Altersgruppe, um mithilfe eines Entscheidungsbaums die entscheidenden Faktoren und Kohorten offenzulegen.
-
-    ![](https://www.kroesch.ch/posts/der_untergang/Titanic_wreck_bow.jpg)
     """)
     return
 
@@ -140,6 +138,8 @@ def _(mo):
     ## Überlebende nach Merkmalen
 
     Die Titanic hatte mehrere Reiseklassen, wobe sich die erste Klasse auf den oberen Decks befand. Die Passagiere wurden dort früher geweckt und hatten besseren Zugang zzu den Rettungsbooten. Die zweite und dritte Klasse befand sich auf den tieferen Decks im Schiffsrumpf und Fluchtwege waren ausserdem durch Absperrgitter versperrt. Ausserdem gilt in der Seefahrt "Frauen und Kinder zuerst"; dieser Grundsatz soll die Restlebenszeit maximieren.
+
+    ![](https://www.ggarchives.com/CVimages/OT/Titanic/TheShipbuilder/1911-Midsummer/Plate3-BoatDeckAndPromenadeDeckA.jpg)
 
     Wir vermuten also, dass generell mehr Frauen und Passagiere der ersten und zweiten Klasse das Unglück überlebt haben.
     """)
@@ -505,6 +505,28 @@ def _(mo):
     - Rohdaten: https://s3.kroesch.net/example_datasets/titanic.parquet
     - [Scikit-Learn: Decision Trees](https://scikit-learn.org/stable/modules/tree.html)
     - [Der Untergang](https://www.kroesch.ch/posts/der_untergang/): Blogpost zu den Ursachen der Katastrophe und den nautischen Konsequenzen.
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    <div style="text-align: center; padding: 20px;">
+      <h3 style="margin-bottom: 15px;">Live-Demo im Browser</h3>
+      <img
+        src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https://kernlogik.github.io/titanic_passengers/&format=svg"
+        alt="QR-Code zur Titanic Live-Demo"
+        width="220"
+        height="220"
+        style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+      />
+      <p style="margin-top: 12px; font-family: 'Inter', sans-serif;">
+        <a href="https://kernlogik.github.io/titanic_passengers/" target="_blank" style="text-decoration: none; font-weight: 600;">
+          kernlogik.github.io/titanic_passengers
+        </a>
+      </p>
+    </div>
     """)
     return
 
