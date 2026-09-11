@@ -80,7 +80,7 @@ marimo export html-wasm synopsis.py --output dist/index.html --mode run
 
 Developed collaboratively by a 4-person team during the FHNW BSc Data Science & AI kick-off event.
 
-<a href="https://github.com/<owner>/<repo>/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=<owner>/<repo>" alt="Contributors" />
+<a href="https://github.com/kernlogik/titanic_passengers/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kernlogik/titanic_passengers>" alt="Contributors" />
 </a>
 
