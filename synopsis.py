@@ -170,6 +170,127 @@ def _(df, mo, pl):
 
 
 @app.cell
+def _(df, pl, plt):
+    import seaborn as sns
+
+    sns.set_theme()
+
+    category_names = ["Kinder", "Jugendliche", "Erwachsene", "Senioren"]
+
+    """ Null-Werte ausschliessen, Altersgruppen und deutsches Geschlecht anlegen """
+    df_binned = (
+        df
+        .drop_nulls(subset=["age"])
+        .with_columns([
+            pl.col("age")
+            .cut(breaks=[15, 25, 65], labels=category_names)
+            .alias("age_group"),
+            pl.col("sex")
+            .cast(pl.String)
+            .replace({
+                "male": "Männlich", "0": "Männlich",
+                "female": "Weiblich", "1": "Weiblich"
+            })
+            .alias("Geschlecht"),
+            # survived in Float wandeln für saubere Mittelwertbildung
+            pl.col("survived").cast(pl.Float64)
+        ])
+    )
+
+    """ Pivotieren: mean * 100 liefert die Überlebensquote in Prozent """
+    pivot_df = (
+        df_binned
+        .pivot(
+            on="Geschlecht",
+            index="age_group",
+            values="survived",
+            aggregate_function="mean",
+        )
+        .with_columns([
+            (pl.col("Männlich") * 100).round(1),
+            (pl.col("Weiblich") * 100).round(1)
+        ])
+        .sort("age_group")
+    )
+
+    """ Achsen und Matrix vorbereiten """
+    x_labels = ["Männlich", "Weiblich"]
+    y_labels = pivot_df["age_group"].to_list()
+    heatmap_matrix = pivot_df.select(x_labels).to_numpy()
+
+    """ Heatmap mit Prozentwerten und korrekter Farbskala ausgeben """
+    h_fig, h_ax = plt.subplots(figsize=(6, 4))
+    sns.heatmap(
+        heatmap_matrix,
+        annot=True,
+        fmt=".1f",
+        cmap="RdYlGn",  # Rot = geringe Chance, Grün = hohe Chance
+        vmin=0,
+        vmax=100,
+        xticklabels=x_labels,
+        yticklabels=y_labels,
+        cbar_kws={"label": "Überlebensquote in %"},
+        ax=h_ax,
+    )
+    h_ax.invert_yaxis()
+
+    h_ax
+    return (sns,)
+
+
+@app.cell
+def _(df, pl, plt, sns):
+
+    sns.set_theme(style="whitegrid")
+
+    """ Daten aggregieren und Überlebensrate in Prozent berechnen """
+    bar_df = (
+        df.with_columns([
+            pl.col("pclass").cast(pl.String).replace({
+                "1": "1. Klasse",
+                "2": "2. Klasse",
+                "3": "3. Klasse"
+            }).alias("Klasse"),
+            pl.col("sex").cast(pl.String).replace({
+                "male": "Männer", "0": "Männer",
+                "female": "Frauen", "1": "Frauen"
+            }).alias("Geschlecht"),
+            pl.col("survived").cast(pl.Float64)
+        ])
+        .group_by(["Klasse", "Geschlecht"])
+        .agg((pl.col("survived").mean() * 100).round(1).alias("Überlebensrate"))
+        .sort(["Klasse", "Geschlecht"])
+    )
+
+    """ Plot initialisieren und zeichnen (WASM-sicher ohne Arrow-Konvertierung) """
+    b_fig, b_ax = plt.subplots(figsize=(7, 4.5))
+
+    sns.barplot(
+        data=bar_df.to_dict(as_series=False),
+        x="Klasse",
+        y="Überlebensrate",
+        hue="Geschlecht",
+        palette={"Frauen": "#2ca02c", "Männer": "#1f77b4"},
+        ax=b_ax
+    )
+
+    """ Beschriftungen, Skala und Werte-Labels setzen """
+    b_ax.set_title("Überlebensrate nach Klasse und Geschlecht", fontsize=13, weight="bold")
+    b_ax.set_ylabel("Überlebensquote in %")
+    b_ax.set_xlabel("Reiseklasse")
+    b_ax.set_ylim(0, 105)
+
+    for container in b_ax.containers:
+        b_ax.bar_label(container, fmt="%.1f%%", padding=3, fontsize=9)
+
+    b_ax.legend(title="Geschlecht", loc="upper right")
+    b_fig.tight_layout()
+
+    b_ax
+    return
+
+
+@app.cell
 def _(mo):
     mo.md(r"""
     ## Regelbasierte Klassifikation der Überlebenswahrscheinlichkeit
@@ -258,6 +379,7 @@ def _(df, pl):
         classification_report,
         clf,
         cross_val_score,
+        plt,
         y,
         y_test,
     )
