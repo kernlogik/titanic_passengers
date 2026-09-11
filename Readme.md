@@ -4,7 +4,8 @@ An interactive data analysis dashboard and survival simulator based on the histo
 
 This project was developed during the introductory seminar for the **Data Science & Artificial Intelligence** program at the **University of Applied Sciences and Arts Northwestern Switzerland (FHNW)**, consolidating the exploratory and predictive modeling work of a four-person team.
 
-[![Deploy](https://github.com/kernlogik/titanic_passengers/actions/workflows/deploy.yml/badge.svg)](https://github.com/kernlogik/titanic_passengers/actions/workflows/deploy.yml) 
+[![Deploy Marimo to GitHub Pages](https://github.com/kernlogik/titanic_passengers/actions/workflows/publish.yaml/badge.svg)](https://github.com/kernlogik/titanic_passengers/actions/workflows/publish.yaml)
+
 [Live Demo](https://kernlogik.github.io/titanic_passengers/)
 
 ## Features
